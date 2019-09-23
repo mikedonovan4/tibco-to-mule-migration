@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	
+		<sub-flow name="async-logging-start-subflow" doc:id="c91f0b07-7b66-41af-8c30-de699e940972" >
+		
+		<async doc:name="Async" doc:id="621c6b98-dd5a-49d6-becc-106ce515318c" >
+
+			<ee:transform doc:name="Transform Message" doc:id="71f03548-c564-45b6-8b5c-4043408804d4">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"apiName" : vars.logVars.apiName default app.name,
+	"flowName": ((vars.logVars.flowName default 'Flow Started') ++" Started"),
+	"sourceName" : vars.logVars.sourceName default "Tibco",
+	"targetName" :  vars.logVars.targetName default "MuleSoft",
+	"correlationId" :vars.logVars.correlationId default correlationId,
+	"startTransactionTimestamp" : now() as String {format : "yyyy-MM-dd HH:mm:ss"} ,
+}
+
+]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="93fabfbb-dd71-4891-ab59-f2d4bc4ddc4d" message="#[payload]" />
+		
+	</async>
+	</sub-flow>
+	
+		<sub-flow name="async-logging-end-subflow" doc:id="4100b25f-1a4c-4d51-8884-22bd466d92c0" >
+		<async doc:name="Async" doc:id="ae9125ac-b48b-453c-91c3-d713d427dbc3" >
+			<ee:transform doc:name="Transform Message" doc:id="a1a6f1c9-37ff-47a0-82fa-4b57486dc522">
+			<ee:message>
+			</ee:message>
+				<ee:variables>
+					<ee:set-variable variableName="inputVars"><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"apiName" : vars.logVars.apiName default app.name,
+	"flowName": ((vars.logVars.flowName default 'Flow Ended') ++" Ended"),
+	"sourceName" : vars.logVars.sourceName default "Tibco",
+	"targetName" :  vars.logVars.targetName default "MuleSoft",
+	"correlationId" :vars.logVars.correlationId default correlationId,
+	"EndTransactionTimestamp" : now() as String {format : "yyyy-MM-dd HH:mm:ss"} ,
+		
+		
+}]]></ee:set-variable>
+
+				</ee:variables>
+		</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="1ee9de28-af38-4226-8f69-7642c0c3ab2e" message="#[vars.inputVars]" />
+		</async>
+	
+</sub-flow>
+	<sub-flow name="error-logging-subflow" doc:id="c5a068e3-4766-4e21-acf1-7ee8ca05a9c0" >
+		<ee:transform doc:name="Transform Message" doc:id="e93092b9-4a81-4afe-91e4-ee06169ed349" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="logVars" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+
+	"apiName" : vars.logVars.apiName default app.name,
+	"flowName": vars.logVars.flowName default 'Flow',
+	"sourceName" : vars.logVars.sourceName default "Tibco",
+	"targetName" :  vars.logVars.targetName default "MuleSoft",
+	"correlationId" :vars.logVars.correlationId default correlationId,
+	 "description" : if(vars.logVars.description != null) vars.logVars.description
+				else if(error.errorMessage.payload is String or error.errorMessage.payload is Binary or error.errorMessage.payload == null) error.description 
+				else if (error.errorMessage.payload.error.message != null and error.errorMessage.payload.error.message is String) error.errorMessage.payload.error.message
+				else if(error.errorMessage.payload.error.message.value != null and error.errorMessage.payload.error.message.value is String ) error.errorMessage.payload.error.message.value 
+				else error.description,
+	"detailedDescription": if (vars.logVars.detailedDescription != null) vars.logVars.detailedDescription
+				else if(error.errorMessage.payload is String or error.errorMessage.payload is Binary or error.errorMessage.payload == null) error.detailedDescription 
+				else if (error.errorMessage.payload.error.message != null and error.errorMessage.payload.error.message is String)
+					error.errorMessage.payload.error.message
+				else if(error.errorMessage.payload.error.message.value != null and error.errorMessage.payload.error.message.value is String )
+					error.errorMessage.payload.error.message.value else
+				error.detailedDescription,
+	"errorCause" : error.exception.cause.localizedMessage default '',
+	"errorType" :  if (vars.logVars.errorType != null) vars.logVars.errorType 
+	else if(error.errorMessage.payload is String or error.errorMessage.payload is Binary or error.errorMessage.payload == null) (error.errorType.namespace ++ ':' ++ error.errorType.identifier) else if (error.errorMessage.payload.error.code != null) error.errorMessage.payload.error.code else (error.errorType.namespace ++ ':' ++ error.errorType.identifier) 
+	
+	}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<set-payload value="#[vars.logVars]" doc:name="Set Payload" doc:id="8d90caa7-92cf-47cf-b877-b7498ff47e1a" />
+		<logger level="INFO" doc:name="Logger" doc:id="605a0c5a-afef-4b72-957a-43269dd1fcac" message="#[vars.logVars]"/>
+
+	</sub-flow>
+	
+</mule>

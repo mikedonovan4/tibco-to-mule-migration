@@ -1,0 +1,9 @@
+
+httpKeys: ":host,:port,:path"
+httpConfigString: "<http:listener doc:name='Listener' doc:id='1e8682ea-96c8-40b6-bb1e-27ae038f5a15' config-ref='HTTP_Listener_config' host= :host port= :port path= :path/>"
+
+BW:
+  HOST:
+    NAME: "TestProperty"
+    
+ 
