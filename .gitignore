@@ -32,7 +32,7 @@ local.properties
 # Locally stored "Eclipse launch configurations"
 *.launch
 
-# CDT-specific
+# CDT-specific blah
 .cproject
 
 # PDT-specific
