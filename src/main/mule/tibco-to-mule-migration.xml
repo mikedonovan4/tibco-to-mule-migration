@@ -218,6 +218,12 @@ payload.'process'.'scope'.'flow'.*'extensionActivity' map ((payload01,payload01i
 			
 		   }
 	)
+	else if(payload01..'BWActivity'.@activityTypeID[0] == "bw.jms.receive")(
+		(payload01.receiveEvent.@'name'): {
+			"config-ref": payload.'process'.'variables'.*variable[?($.@name == payload01.receiveEvent.eventSource.BWActivity.activityConfig.properties.value.@connectionReference)][0].'from'.literal,
+			"destination": payload01.receiveEvent.eventSource.BWActivity.activityConfig.properties.value.@destinationName
+		   }
+	)
 		else ""
 ))
 ]]></ee:set-variable>
@@ -250,6 +256,9 @@ mule @('xmlns': "http://www.mulesoft.org/schema/mule/core",
 				'db:select' @('doc:name':"Select" ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref':  vars.tibcoComponentList[$.activityExtension.@'name'][0].'config-ref', "maxRows": vars.tibcoComponentList[$.activityExtension.@'name'][0].maxRows ):{
 					'db:sql' : vars.tibcoComponentList[$.activityExtension.@'name'][0].sqlStatement
 				}
+			)
+			else if($..'BWActivity'.@activityTypeID[0] == "bw.jms.receive")(
+				'jms:listener' @('doc:name':"Listener" ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref':  vars.tibcoComponentList[$.receiveEvent.@'name'][0].'config-ref', "destination": vars.tibcoComponentList[$.receiveEvent.@'name'][0].destination):{}
 			)
 			else {}
 		) reduce ($$ ++ $)
