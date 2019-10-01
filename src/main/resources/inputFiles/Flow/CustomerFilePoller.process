@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pd:ProcessDefinition xmlns:pd="http://xmlns.tibco.com/bw/process/2003" xmlns:ns1="http://www.tibco.com/pe/WriteToLogActivitySchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ns="http://www.tibco.com/namespaces/tnt/plugins/file" xmlns:tib="http://www.tibco.com/bw/xslt/custom-functions" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <pd:name>BusinessProcesses/Customer/StarterProcess/CustomerFilePoller.process</pd:name>
+    <pd:startName>File Poller</pd:startName>
+    <pd:startX>0</pd:startX>
+    <pd:startY>0</pd:startY>
+    <pd:returnBindings/>
+    <pd:starter name="File Poller">
+        <pd:type>com.tibco.plugin.file.FileEventSource</pd:type>
+        <pd:resourceType>ae.activities.FileEventSourceResource</pd:resourceType>
+        <pd:x>135</pd:x>
+        <pd:y>76</pd:y>
+        <config>
+            <pollInterval>2</pollInterval>
+            <createEvent>true</createEvent>
+            <modifyEvent>true</modifyEvent>
+            <deleteEvent>true</deleteEvent>
+            <mode>files-and-directories</mode>
+            <encoding>text</encoding>
+            <sortby>Date Modified</sortby>
+            <sortorder>descending</sortorder>
+            <fileName>C:/CustomerFiles/*</fileName>
+            <includeCurrent>true</includeCurrent>
+            <encodingUsed>UTF8</encodingUsed>
+        </config>
+        <pd:inputBindings/>
+    </pd:starter>
+    <pd:endName>End</pd:endName>
+    <pd:endX>756</pd:endX>
+    <pd:endY>79</pd:endY>
+    <pd:errorSchemas/>
+    <pd:processVariables/>
+    <pd:targetNamespace>http://xmlns.example.com/1569557457092</pd:targetNamespace>
+    <pd:group name="Group">
+        <pd:type>com.tibco.pe.core.LoopGroup</pd:type>
+        <pd:resourceType>ae.process.group</pd:resourceType>
+        <pd:x>403</pd:x>
+        <pd:y>0</pd:y>
+        <pd:width>211</pd:width>
+        <pd:height>140</pd:height>
+        <pd:collapsedWidth>52</pd:collapsedWidth>
+        <pd:collapsedHeight>69</pd:collapsedHeight>
+        <pd:groupVariables/>
+        <config>
+            <pd:groupType>inputLoop</pd:groupType>
+            <pd:serializable>false</pd:serializable>
+            <pd:over>$Parse-Data/Output/Rows/root</pd:over>
+            <pd:iterationElementSlot>CurrentRow</pd:iterationElementSlot>
+            <pd:indexSlot>i</pd:indexSlot>
+            <pd:activityOutputName/>
+            <pd:accumulateOutput>false</pd:accumulateOutput>
+        </config>
+        <pd:inputBindings/>
+        <pd:expanded>true</pd:expanded>
+        <pd:transition>
+            <pd:from>start</pd:from>
+            <pd:to>InsertCustomerData</pd:to>
+            <pd:lineType>Default</pd:lineType>
+            <pd:lineColor>-16777216</pd:lineColor>
+            <pd:conditionType>always</pd:conditionType>
+        </pd:transition>
+        <pd:transition>
+            <pd:from>InsertCustomerData</pd:from>
+            <pd:to>end</pd:to>
+            <pd:lineType>Default</pd:lineType>
+            <pd:lineColor>-16777216</pd:lineColor>
+            <pd:conditionType>always</pd:conditionType>
+        </pd:transition>
+        <pd:activity name="InsertCustomerData">
+            <pd:type>com.tibco.plugin.jdbc.JDBCUpdateActivity</pd:type>
+            <pd:resourceType>ae.activities.JDBCUpdateActivity</pd:resourceType>
+            <pd:x>513</pd:x>
+            <pd:y>77</pd:y>
+            <config>
+                <timeout>%%CustomerApplication/Connections/JDBC/TimeOut%%</timeout>
+                <commit>false</commit>
+                <emptyStrAsNil>false</emptyStrAsNil>
+                <statement>insert into customer (Name, Age, Designation, SSN, Phone, Address) Values(?,?,?,?,?,?)</statement>
+                <Prepared_Param_DataType>
+                    <parameter>
+                        <parameterName>Name</parameterName>
+                        <dataType>VARCHAR</dataType>
+                    </parameter>
+                    <parameter>
+                        <parameterName>Age</parameterName>
+                        <dataType>INTEGER</dataType>
+                    </parameter>
+                    <parameter>
+                        <parameterName>Designation</parameterName>
+                        <dataType>VARCHAR</dataType>
+                    </parameter>
+                    <parameter>
+                        <parameterName>SSN</parameterName>
+                        <dataType>VARCHAR</dataType>
+                    </parameter>
+                    <parameter>
+                        <parameterName>Phone</parameterName>
+                        <dataType>VARCHAR</dataType>
+                    </parameter>
+                    <parameter>
+                        <parameterName>Address</parameterName>
+                        <dataType>VARCHAR</dataType>
+                    </parameter>
+                </Prepared_Param_DataType>
+                <jdbcSharedConfig>/BusinessProcesses/SharedResources/Connections/JDBC/JDBCConnection-CustomerDB.sharedjdbc</jdbcSharedConfig>
+            </config>
+            <pd:inputBindings>
+                <jdbcUpdateActivityInput>
+                    <Name>
+                        <xsl:choose>
+                            <xsl:when test="exists($CurrentRow/root/Name)">
+                                <xsl:value-of select="$CurrentRow/root/Name"/>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:attribute name="xsi:nil">true</xsl:attribute>
+                            </xsl:otherwise>
+                        </xsl:choose>
+                    </Name>
+                    <Age>
+                        <xsl:choose>
+                            <xsl:when test="exists($CurrentRow/root/Age)">
+                                <xsl:value-of select="$CurrentRow/root/Age"/>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:attribute name="xsi:nil">true</xsl:attribute>
+                            </xsl:otherwise>
+                        </xsl:choose>
+                    </Age>
+                    <Designation>
+                        <xsl:choose>
+                            <xsl:when test="exists($CurrentRow/root/Designation)">
+                                <xsl:value-of select="$CurrentRow/root/Designation"/>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:attribute name="xsi:nil">true</xsl:attribute>
+                            </xsl:otherwise>
+                        </xsl:choose>
+                    </Designation>
+                    <SSN>
+                        <xsl:choose>
+                            <xsl:when test="exists($CurrentRow/root/SSN)">
+                                <xsl:value-of select="$CurrentRow/root/SSN"/>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:attribute name="xsi:nil">true</xsl:attribute>
+                            </xsl:otherwise>
+                        </xsl:choose>
+                    </SSN>
+                    <Phone>
+                        <xsl:choose>
+                            <xsl:when test="exists($CurrentRow/root/Phone)">
+                                <xsl:value-of select="$CurrentRow/root/Phone"/>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:attribute name="xsi:nil">true</xsl:attribute>
+                            </xsl:otherwise>
+                        </xsl:choose>
+                    </Phone>
+                    <Address>
+                        <xsl:choose>
+                            <xsl:when test="exists($CurrentRow/root/Address)">
+                                <xsl:value-of select="$CurrentRow/root/Address"/>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:attribute name="xsi:nil">true</xsl:attribute>
+                            </xsl:otherwise>
+                        </xsl:choose>
+                    </Address>
+                </jdbcUpdateActivityInput>
+            </pd:inputBindings>
+        </pd:activity>
+    </pd:group>
+    <pd:activity name="CatchAll">
+        <pd:type>com.tibco.pe.core.CatchActivity</pd:type>
+        <pd:resourceType>ae.activities.catch</pd:resourceType>
+        <pd:x>319</pd:x>
+        <pd:y>330</pd:y>
+        <pd:handler>true</pd:handler>
+        <config>
+            <catchAll>true</catchAll>
+        </config>
+        <pd:inputBindings/>
+    </pd:activity>
+    <pd:activity name="ExceptionLog">
+        <pd:type>com.tibco.pe.core.WriteToLogActivity</pd:type>
+        <pd:resourceType>ae.activities.log</pd:resourceType>
+        <pd:x>470</pd:x>
+        <pd:y>330</pd:y>
+        <config>
+            <role>Exception</role>
+        </config>
+        <pd:inputBindings>
+            <ns1:ActivityInput>
+                <message>
+                    <xsl:value-of select="tib:trim($CatchAll/exceptiondata)"/>
+                </message>
+            </ns1:ActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="Parse Data">
+        <pd:type>com.tibco.plugin.parse.ParseActivity</pd:type>
+        <pd:resourceType>ae.activities.ParseActivity</pd:resourceType>
+        <pd:x>288</pd:x>
+        <pd:y>76</pd:y>
+        <config>
+            <InputType>String</InputType>
+            <Encoding>ASCII</Encoding>
+            <ParseSharedConfig>/BusinessProcesses/SharedResources/DataFormats/CustomerDataFormat.sharedparse</ParseSharedConfig>
+        </config>
+        <pd:inputBindings>
+            <Input>
+                <text>
+                    <xsl:value-of select="$File-Poller/ns:EventSourceOuputTextClass/fileContent/textContent"/>
+                </text>
+                <noOfRecords>
+                    <xsl:value-of select="-1"/>
+                </noOfRecords>
+            </Input>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="Remove File">
+        <pd:type>com.tibco.plugin.file.FileRemoveActivity</pd:type>
+        <pd:resourceType>ae.activities.FileRemoveActivity</pd:resourceType>
+        <pd:x>755</pd:x>
+        <pd:y>330</pd:y>
+        <config/>
+        <pd:inputBindings>
+            <ns:RemoveActivityInputClass>
+                <fileName>
+                    <xsl:value-of select="$File-Poller/ns:EventSourceOuputTextClass/fileInfo/fullName"/>
+                </fileName>
+            </ns:RemoveActivityInputClass>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="Rename File">
+        <pd:type>com.tibco.plugin.file.FileRenameActivity</pd:type>
+        <pd:resourceType>ae.activities.FileRenameActivity</pd:resourceType>
+        <pd:x>608</pd:x>
+        <pd:y>329</pd:y>
+        <config>
+            <createMissingDirectories>true</createMissingDirectories>
+        </config>
+        <pd:inputBindings>
+            <ns:RenameActivityConfig>
+                <fromFileName>
+                    <xsl:value-of select="$File-Poller/ns:EventSourceOuputTextClass/fileInfo/fullName"/>
+                </fromFileName>
+                <toFileName>
+                    <xsl:value-of select="concat('C:\CustomerFiles\ErrorFiles',  substring-before($File-Poller/ns:EventSourceOuputTextClass/fileInfo/fileName,'.'),tib:timestamp(),substring-after($File-Poller/ns:EventSourceOuputTextClass/fileInfo/fileName,'.'))"/>
+                </toFileName>
+            </ns:RenameActivityConfig>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:transition>
+        <pd:from>File Poller</pd:from>
+        <pd:to>Parse Data</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>Parse Data</pd:from>
+        <pd:to>Group</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>Group</pd:from>
+        <pd:to>End</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>CatchAll</pd:from>
+        <pd:to>ExceptionLog</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>ExceptionLog</pd:from>
+        <pd:to>Rename File</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>Rename File</pd:from>
+        <pd:to>Remove File</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>Remove File</pd:from>
+        <pd:to>End</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+</pd:ProcessDefinition>

@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pd:ProcessDefinition xmlns:pd="http://xmlns.tibco.com/bw/process/2003" xmlns:ns2="http://www.tibco.com/namespaces/tnt/plugins/json" xmlns:ns1="http://www.tibco.com/pe/WriteToLogActivitySchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ns="http://www.tibco.com/pe/DeployedVarsType" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tib="http://www.tibco.com/bw/xslt/custom-functions" xmlns:pfx2="http://www.example.org/Response" xmlns:pfx="http://www.example.org/CustomerXMLSchema">
+    <xsd:import namespace="http://www.example.org/CustomerXMLSchema" schemaLocation="/BusinessProcesses/SharedResources/Schemas/CustomerSchema.xsd"/>
+    <xsd:import namespace="http://www.example.org/Response" schemaLocation="/BusinessProcesses/SharedResources/Schemas/Response.xsd"/>
+    <pd:name>BusinessProcesses/Customer/StarterProcess/ReceiverCustomerHTTPRequest.process</pd:name>
+    <pd:startName>HTTP Receiver</pd:startName>
+    <pd:startX>0</pd:startX>
+    <pd:startY>0</pd:startY>
+    <pd:returnBindings/>
+    <pd:starter name="HTTP Receiver">
+        <pd:type>com.tibco.plugin.http.HTTPEventSource</pd:type>
+        <pd:resourceType>httppalette.httpEventSource</pd:resourceType>
+        <pd:x>85</pd:x>
+        <pd:y>54</pd:y>
+        <config>
+            <outputMode>String</outputMode>
+            <defaultEncoding>ISO8859_1</defaultEncoding>
+            <inputOutputVersion>5.3.0</inputOutputVersion>
+            <newMimeSupport>true</newMimeSupport>
+            <sharedChannel>/BusinessProcesses/SharedResources/Connections/HTTP/CustomerHTTPConnection.sharedhttp</sharedChannel>
+            <Headers>
+                <xsd:element name="root">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="Accept" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Accept-Charset" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Accept-Encoding" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Content-Type" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Content-Length" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Connection" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Cookie" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Pragma" type="xsd:string" minOccurs="0"/>
+                        </xsd:sequence>
+                    </xsd:complexType>
+                </xsd:element>
+            </Headers>
+        </config>
+        <pd:inputBindings/>
+    </pd:starter>
+    <pd:endName>End</pd:endName>
+    <pd:endX>1126</pd:endX>
+    <pd:endY>54</pd:endY>
+    <pd:errorSchemas/>
+    <pd:processVariables/>
+    <pd:targetNamespace>http://xmlns.example.com/1569436336651</pd:targetNamespace>
+    <pd:activity name="CatchAll">
+        <pd:type>com.tibco.pe.core.CatchActivity</pd:type>
+        <pd:resourceType>ae.activities.catch</pd:resourceType>
+        <pd:x>555</pd:x>
+        <pd:y>221</pd:y>
+        <pd:handler>true</pd:handler>
+        <config>
+            <catchAll>true</catchAll>
+        </config>
+        <pd:inputBindings/>
+    </pd:activity>
+    <pd:activity name="EndCustomerLog">
+        <pd:type>com.tibco.pe.core.WriteToLogActivity</pd:type>
+        <pd:resourceType>ae.activities.log</pd:resourceType>
+        <pd:x>969</pd:x>
+        <pd:y>54</pd:y>
+        <config>
+            <role>User</role>
+            <suppressHeader>true</suppressHeader>
+        </config>
+        <pd:inputBindings>
+            <ns1:ActivityInput>
+                <message>
+                    <xsl:value-of select="concat('Customer Data for ', $ParseRequest/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Name, ' : ', $ParseRequest/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Phone, ' sent to queue')"/>
+                </message>
+            </ns1:ActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="ExceptionLog">
+        <pd:type>com.tibco.pe.core.WriteToLogActivity</pd:type>
+        <pd:resourceType>ae.activities.log</pd:resourceType>
+        <pd:x>705</pd:x>
+        <pd:y>222</pd:y>
+        <config>
+            <role>Exception</role>
+            <suppressHeader>true</suppressHeader>
+        </config>
+        <pd:inputBindings>
+            <ns1:ActivityInput>
+                <message>
+                    <xsl:value-of select="concat('Exception occured :',tib:trim($CatchAll/exceptiondata),$HTTP-Receiver/ProcessStarterOutput/PostData)"/>
+                </message>
+                <msgCode>
+                    <xsl:value-of select="$HTTP-Receiver/ProcessStarterOutput/PostData"/>
+                </msgCode>
+            </ns1:ActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="IntialCustomerLog">
+        <pd:type>com.tibco.pe.core.WriteToLogActivity</pd:type>
+        <pd:resourceType>ae.activities.log</pd:resourceType>
+        <pd:x>225</pd:x>
+        <pd:y>54</pd:y>
+        <config>
+            <role>User</role>
+            <suppressHeader>true</suppressHeader>
+        </config>
+        <pd:inputBindings>
+            <ns1:ActivityInput>
+                <message>
+                    <xsl:value-of select="concat('Received Customer Data: ',$HTTP-Receiver/ProcessStarterOutput/PostData)"/>
+                </message>
+            </ns1:ActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="ParseRequest">
+        <pd:type>com.tibco.plugin.json.activities.JSONParserActivity</pd:type>
+        <pd:resourceType>ae.activities.JSONParserActivity</pd:resourceType>
+        <pd:x>362</pd:x>
+        <pd:y>54</pd:y>
+        <config>
+            <SchemaType>xsdType</SchemaType>
+            <BadgerfishCheck>false</BadgerfishCheck>
+            <ActivityOutputEditor ref="pfx:Customers"/>
+        </config>
+        <pd:inputBindings>
+            <ns2:ActivityInputClass>
+                <jsonString>
+                    <xsl:value-of select="$HTTP-Receiver/ProcessStarterOutput/PostData"/>
+                </jsonString>
+            </ns2:ActivityInputClass>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="RenderResponse">
+        <pd:type>com.tibco.plugin.json.activities.JSONRenderActivity</pd:type>
+        <pd:resourceType>ae.activities.JSONRenderActivity</pd:resourceType>
+        <pd:x>649</pd:x>
+        <pd:y>53</pd:y>
+        <config>
+            <SchemaType>xsdType</SchemaType>
+            <BadgerfishCheck>false</BadgerfishCheck>
+            <ActivityInputEditor ref="pfx2:Response"/>
+        </config>
+        <pd:inputBindings>
+            <ns2:ActivityInputClass>
+                <pfx2:Response>
+                    <pfx2:Message>
+                        <xsl:value-of select="'Customer creation Successful!'"/>
+                    </pfx2:Message>
+                    <pfx2:MessageCode>
+                        <xsl:value-of select="202"/>
+                    </pfx2:MessageCode>
+                    <pfx2:StatusLine>
+                        <xsl:value-of select="'HTTP/1.1 202 OK'"/>
+                    </pfx2:StatusLine>
+                </pfx2:Response>
+            </ns2:ActivityInputClass>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="SendHTTPResponse">
+        <pd:type>com.tibco.plugin.http.HTTPResponseActivity</pd:type>
+        <pd:resourceType>httppalette.httpWebResponse</pd:resourceType>
+        <pd:x>813</pd:x>
+        <pd:y>53</pd:y>
+        <config>
+            <closeConnection>true</closeConnection>
+            <eventSource>HTTP Receiver</eventSource>
+            <Headers>
+                <xsd:element name="root">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="StatusLine" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Content-Type" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Set-Cookie" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Pragma" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Location" type="xsd:string" minOccurs="0"/>
+                        </xsd:sequence>
+                    </xsd:complexType>
+                </xsd:element>
+            </Headers>
+        </config>
+        <pd:inputBindings>
+            <ResponseActivityInput>
+                <asciiContent>
+                    <xsl:value-of select="$RenderResponse/ns2:ActivityOutputClass/jsonString"/>
+                </asciiContent>
+                <Headers>
+                    <StatusLine>
+                        <xsl:value-of select="'HTTP/1.1 202 OK'"/>
+                    </StatusLine>
+                    <Content-Type>
+                        <xsl:value-of select="'application/json'"/>
+                    </Content-Type>
+                </Headers>
+            </ResponseActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="Send-HTTP-Response-1">
+        <pd:type>com.tibco.plugin.http.HTTPResponseActivity</pd:type>
+        <pd:resourceType>httppalette.httpWebResponse</pd:resourceType>
+        <pd:x>984</pd:x>
+        <pd:y>223</pd:y>
+        <config>
+            <closeConnection>true</closeConnection>
+            <eventSource>HTTP Receiver</eventSource>
+            <Headers>
+                <xsd:element name="root">
+                    <xsd:complexType>
+                        <xsd:sequence>
+                            <xsd:element name="StatusLine" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Content-Type" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Set-Cookie" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Pragma" type="xsd:string" minOccurs="0"/>
+                            <xsd:element name="Location" type="xsd:string" minOccurs="0"/>
+                        </xsd:sequence>
+                    </xsd:complexType>
+                </xsd:element>
+            </Headers>
+        </config>
+        <pd:inputBindings>
+            <ResponseActivityInput>
+                <asciiContent>
+                    <xsl:value-of select="$RenderErrorResponse/ns2:ActivityOutputClass/jsonString"/>
+                </asciiContent>
+                <Headers>
+                    <StatusLine>
+                        <xsl:value-of select="'HTTP/1.1 500 Internal Server Error'"/>
+                    </StatusLine>
+                    <Content-Type>
+                        <xsl:value-of select="'application/json'"/>
+                    </Content-Type>
+                </Headers>
+            </ResponseActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="SendToQeueue">
+        <pd:type>com.tibco.pe.core.CallProcessActivity</pd:type>
+        <pd:resourceType>ae.process.subprocess</pd:resourceType>
+        <pd:x>496</pd:x>
+        <pd:y>53</pd:y>
+        <config>
+            <processName>/BusinessProcesses/Customer/SubProcess/SendToQeueue.process</processName>
+        </config>
+        <pd:inputBindings>
+            <root>
+                <Queue>
+                    <xsl:value-of select="$_globalVariables/ns:GlobalVariables/CustomerApplication/Connections/JMS/Destination"/>
+                </Queue>
+                <Body>
+                    <xsl:value-of select="$HTTP-Receiver/ProcessStarterOutput/PostData"/>
+                </Body>
+            </root>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="RenderErrorResponse">
+        <pd:type>com.tibco.plugin.json.activities.JSONRenderActivity</pd:type>
+        <pd:resourceType>ae.activities.JSONRenderActivity</pd:resourceType>
+        <pd:x>839</pd:x>
+        <pd:y>221</pd:y>
+        <config>
+            <SchemaType>xsdType</SchemaType>
+            <BadgerfishCheck>false</BadgerfishCheck>
+            <ActivityInputEditor ref="pfx2:Response"/>
+        </config>
+        <pd:inputBindings>
+            <ns2:ActivityInputClass>
+                <pfx2:Response>
+                    <pfx2:Message>
+                        <xsl:value-of select="'Failure'"/>
+                    </pfx2:Message>
+                    <pfx2:MessageCode>
+                        <xsl:value-of select="500"/>
+                    </pfx2:MessageCode>
+                    <pfx2:StatusLine>
+                        <xsl:value-of select="'HTTP/1.1 500 Internal Server Error'"/>
+                    </pfx2:StatusLine>
+                </pfx2:Response>
+            </ns2:ActivityInputClass>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:transition>
+        <pd:from>HTTP Receiver</pd:from>
+        <pd:to>IntialCustomerLog</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>IntialCustomerLog</pd:from>
+        <pd:to>ParseRequest</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>ParseRequest</pd:from>
+        <pd:to>SendToQeueue</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>SendToQeueue</pd:from>
+        <pd:to>RenderResponse</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>EndCustomerLog</pd:from>
+        <pd:to>End</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>SendHTTPResponse</pd:from>
+        <pd:to>EndCustomerLog</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>CatchAll</pd:from>
+        <pd:to>ExceptionLog</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>ExceptionLog</pd:from>
+        <pd:to>RenderErrorResponse</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>Send-HTTP-Response-1</pd:from>
+        <pd:to>End</pd:to>
+        <pd:lineType>One Bend</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>RenderResponse</pd:from>
+        <pd:to>SendHTTPResponse</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>RenderErrorResponse</pd:from>
+        <pd:to>Send-HTTP-Response-1</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+</pd:ProcessDefinition>

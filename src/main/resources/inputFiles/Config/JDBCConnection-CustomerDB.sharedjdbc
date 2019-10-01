@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BWSharedResource>
+    <name>JDBCConnection-CustomerDB</name>
+    <resourceType>ae.shared.JDBCSharedResource</resourceType>
+    <config>
+        <driver>oracle.jdbc.driver.OracleDriver (thin)</driver>
+        <maxConnections>%%CustomerApplication/Connections/JDBC/MaxConnections%%</maxConnections>
+        <loginTimeout>%%CustomerApplication/Connections/JDBC/TimeOut%%</loginTimeout>
+        <connectionType>JDBC</connectionType>
+        <UseSharedJndiConfig>false</UseSharedJndiConfig>
+        <location>%%CustomerApplication/Connections/JDBC/JDBCURL%%</location>
+        <user>%%CustomerApplication/Connections/JDBC/UserName%%</user>
+        <password>%%CustomerApplication/Connections/JDBC/Password%%</password>
+    </config>
+</BWSharedResource>

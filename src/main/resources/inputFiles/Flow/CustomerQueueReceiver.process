@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pd:ProcessDefinition xmlns:pd="http://xmlns.tibco.com/bw/process/2003" xmlns:ns2="http://www.tibco.com/namespaces/tnt/plugins/json" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ns1="http://www.tibco.com/pe/WriteToLogActivitySchema" xmlns:ns="http://www.tibco.com/namespaces/tnt/plugins/jms" xmlns:ns3="http://www.tibco.com/pe/DeployedVarsType" xmlns:tib="http://www.tibco.com/bw/xslt/custom-functions" xmlns:pfx="http://www.example.org/CustomerXMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <xs:import xmlns:xs="http://www.w3.org/2001/XMLSchema" namespace="http://www.example.org/CustomerXMLSchema" schemaLocation="/BusinessProcesses/SharedResources/Schemas/CustomerSchema.xsd"/>
+    <pd:name>BusinessProcesses/Customer/StarterProcess/CustomerQueueReceiver.process</pd:name>
+    <pd:startName>CustomerQueueReceiver</pd:startName>
+    <pd:startX>0</pd:startX>
+    <pd:startY>0</pd:startY>
+    <pd:returnBindings/>
+    <pd:starter name="CustomerQueueReceiver">
+        <pd:type>com.tibco.plugin.jms.JMSQueueEventSource</pd:type>
+        <pd:resourceType>ae.activities.JMSQueueEventSource</pd:resourceType>
+        <pd:x>154</pd:x>
+        <pd:y>45</pd:y>
+        <config>
+            <PermittedMessageType>Text</PermittedMessageType>
+            <SessionAttributes>
+                <transacted>false</transacted>
+                <acknowledgeMode>23</acknowledgeMode>
+                <maxSessions>1</maxSessions>
+                <destination>%%CustomerApplication/Connections/JMS/Destination%%</destination>
+            </SessionAttributes>
+            <ConfigurableHeaders>
+                <JMSDeliveryMode>PERSISTENT</JMSDeliveryMode>
+                <JMSExpiration>0</JMSExpiration>
+                <JMSPriority>4</JMSPriority>
+            </ConfigurableHeaders>
+            <ConnectionReference>/BusinessProcesses/SharedResources/Connections/JMS/JMS Connection.sharedjmscon</ConnectionReference>
+        </config>
+        <pd:inputBindings/>
+    </pd:starter>
+    <pd:endName>End</pd:endName>
+    <pd:endX>946</pd:endX>
+    <pd:endY>45</pd:endY>
+    <pd:errorSchemas/>
+    <pd:processVariables/>
+    <pd:targetNamespace>http://xmlns.example.com/1569472685658</pd:targetNamespace>
+    <pd:activity name="CatchAll">
+        <pd:type>com.tibco.pe.core.CatchActivity</pd:type>
+        <pd:resourceType>ae.activities.catch</pd:resourceType>
+        <pd:x>543</pd:x>
+        <pd:y>292</pd:y>
+        <pd:handler>true</pd:handler>
+        <config>
+            <catchAll>true</catchAll>
+        </config>
+        <pd:inputBindings/>
+    </pd:activity>
+    <pd:activity name="CompletedLog">
+        <pd:type>com.tibco.pe.core.WriteToLogActivity</pd:type>
+        <pd:resourceType>ae.activities.log</pd:resourceType>
+        <pd:x>683</pd:x>
+        <pd:y>45</pd:y>
+        <config>
+            <role>User</role>
+        </config>
+        <pd:inputBindings>
+            <ns1:ActivityInput>
+                <message>
+                    <xsl:value-of select="concat('Successfully inserted Customer data to DB for Customer: ', $ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Name, ' with Phone: ',$ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Phone)"/>
+                </message>
+            </ns1:ActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="Confirm">
+        <pd:type>com.tibco.pe.core.ConfirmActivity</pd:type>
+        <pd:resourceType>activity.confirm</pd:resourceType>
+        <pd:x>808</pd:x>
+        <pd:y>140</pd:y>
+        <config>
+            <ConfirmEvent>CustomerQueueReceiver</ConfirmEvent>
+        </config>
+        <pd:inputBindings/>
+    </pd:activity>
+    <pd:activity name="ConfirmOnError">
+        <pd:type>com.tibco.pe.core.ConfirmActivity</pd:type>
+        <pd:resourceType>activity.confirm</pd:resourceType>
+        <pd:x>946</pd:x>
+        <pd:y>292</pd:y>
+        <config>
+            <ConfirmEvent>CustomerQueueReceiver</ConfirmEvent>
+        </config>
+        <pd:inputBindings/>
+    </pd:activity>
+    <pd:activity name="ExceptionLog">
+        <pd:type>com.tibco.pe.core.WriteToLogActivity</pd:type>
+        <pd:resourceType>ae.activities.log</pd:resourceType>
+        <pd:x>686</pd:x>
+        <pd:y>292</pd:y>
+        <config>
+            <role>Exception</role>
+        </config>
+        <pd:inputBindings>
+            <ns1:ActivityInput>
+                <message>
+                    <xsl:value-of select="tib:trim($CatchAll/exceptiondata)"/>
+                </message>
+            </ns1:ActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="IntialLog">
+        <pd:type>com.tibco.pe.core.WriteToLogActivity</pd:type>
+        <pd:resourceType>ae.activities.log</pd:resourceType>
+        <pd:x>274</pd:x>
+        <pd:y>140</pd:y>
+        <config>
+            <role>User</role>
+            <suppressHeader>true</suppressHeader>
+        </config>
+        <pd:inputBindings>
+            <ns1:ActivityInput>
+                <message>
+                    <xsl:value-of select="concat('Received Customer Data from Database- ',$CustomerQueueReceiver/ns:ActivityOutput/Body)"/>
+                </message>
+            </ns1:ActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="InsertCustomerData">
+        <pd:type>com.tibco.plugin.jdbc.JDBCUpdateActivity</pd:type>
+        <pd:resourceType>ae.activities.JDBCUpdateActivity</pd:resourceType>
+        <pd:x>561</pd:x>
+        <pd:y>140</pd:y>
+        <config>
+            <timeout>%%CustomerApplication/Connections/JDBC/TimeOut%%</timeout>
+            <commit>false</commit>
+            <emptyStrAsNil>false</emptyStrAsNil>
+            <statement>insert into customer (Name, Age, Designation, SSN, Phone, Address) Values(?,?,?,?,?,?)</statement>
+            <Prepared_Param_DataType>
+                <parameter>
+                    <parameterName>Name</parameterName>
+                    <dataType>VARCHAR</dataType>
+                </parameter>
+                <parameter>
+                    <parameterName>Age</parameterName>
+                    <dataType>INTEGER</dataType>
+                </parameter>
+                <parameter>
+                    <parameterName>Designation</parameterName>
+                    <dataType>VARCHAR</dataType>
+                </parameter>
+                <parameter>
+                    <parameterName>SSN</parameterName>
+                    <dataType>VARCHAR</dataType>
+                </parameter>
+                <parameter>
+                    <parameterName>Phone</parameterName>
+                    <dataType>VARCHAR</dataType>
+                </parameter>
+                <parameter>
+                    <parameterName>Address</parameterName>
+                    <dataType>VARCHAR</dataType>
+                </parameter>
+            </Prepared_Param_DataType>
+            <jdbcSharedConfig>/BusinessProcesses/SharedResources/Connections/JDBC/JDBCConnection-CustomerDB.sharedjdbc</jdbcSharedConfig>
+        </config>
+        <pd:inputBindings>
+            <jdbcUpdateActivityInput>
+                <Name>
+                    <xsl:choose>
+                        <xsl:when test="exists($ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Name)">
+                            <xsl:value-of select="$ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Name"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:attribute name="xsi:nil">true</xsl:attribute>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </Name>
+                <Age>
+                    <xsl:choose>
+                        <xsl:when test="exists($ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Age)">
+                            <xsl:value-of select="$ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Age"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:attribute name="xsi:nil">true</xsl:attribute>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </Age>
+                <Designation>
+                    <xsl:choose>
+                        <xsl:when test="exists($ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Designation)">
+                            <xsl:value-of select="$ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Designation"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:attribute name="xsi:nil">true</xsl:attribute>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </Designation>
+                <SSN>
+                    <xsl:choose>
+                        <xsl:when test="exists($ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:SSN)">
+                            <xsl:value-of select="$ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:SSN"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:attribute name="xsi:nil">true</xsl:attribute>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </SSN>
+                <Phone>
+                    <xsl:choose>
+                        <xsl:when test="exists($ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Phone)">
+                            <xsl:value-of select="$ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Phone"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:attribute name="xsi:nil">true</xsl:attribute>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                </Phone>
+                <Address>
+                    <xsl:value-of select="concat($ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Address/pfx:Street1,' ', $ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Address/pfx:Street2,' ',  $ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Address/pfx:Area,' ', $ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Address/pfx:City,' ' ,$ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Address/pfx:State,' ' ,$ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Address/pfx:Country,' ' ,$ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Address/pfx:ZipCode,' ', $ParseCustomerData/ns2:ActivityOutputClass/pfx:Customers/pfx:Customer/pfx:Address/pfx:Phone)"/>
+                </Address>
+            </jdbcUpdateActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="JMSSendToErrorQeueu">
+        <pd:type>com.tibco.plugin.jms.JMSQueueSendActivity</pd:type>
+        <pd:resourceType>ae.activities.JMSQueueSendActivity</pd:resourceType>
+        <pd:x>818</pd:x>
+        <pd:y>292</pd:y>
+        <config>
+            <PermittedMessageType>Text</PermittedMessageType>
+            <SessionAttributes>
+                <transacted>false</transacted>
+                <acknowledgeMode>1</acknowledgeMode>
+                <maxSessions>1</maxSessions>
+                <destination>%%CustomerApplication/Connections/JMS/ErrorQueue%%</destination>
+            </SessionAttributes>
+            <ConfigurableHeaders>
+                <JMSDeliveryMode>PERSISTENT</JMSDeliveryMode>
+                <JMSExpiration>0</JMSExpiration>
+                <JMSPriority>4</JMSPriority>
+            </ConfigurableHeaders>
+            <ConnectionReference>/BusinessProcesses/SharedResources/Connections/JMS/JMS Connection.sharedjmscon</ConnectionReference>
+        </config>
+        <pd:inputBindings>
+            <ns:ActivityInput>
+                <destinationQueue>
+                    <xsl:value-of select="$_globalVariables/ns3:GlobalVariables/CustomerApplication/Connections/JMS/ErrorQueue"/>
+                </destinationQueue>
+                <Body>
+                    <xsl:value-of select="$CustomerQueueReceiver/ns:ActivityOutput/Body"/>
+                </Body>
+            </ns:ActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="ParseCustomerData">
+        <pd:type>com.tibco.plugin.json.activities.JSONParserActivity</pd:type>
+        <pd:resourceType>ae.activities.JSONParserActivity</pd:resourceType>
+        <pd:x>434</pd:x>
+        <pd:y>45</pd:y>
+        <config>
+            <SchemaType>xsdType</SchemaType>
+            <BadgerfishCheck>false</BadgerfishCheck>
+            <ActivityOutputEditor ref="pfx:Customers"/>
+        </config>
+        <pd:inputBindings>
+            <ns2:ActivityInputClass>
+                <jsonString>
+                    <xsl:value-of select="$CustomerQueueReceiver/ns:ActivityOutput/Body"/>
+                </jsonString>
+            </ns2:ActivityInputClass>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:transition>
+        <pd:from>CustomerQueueReceiver</pd:from>
+        <pd:to>IntialLog</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>ParseCustomerData</pd:from>
+        <pd:to>InsertCustomerData</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>InsertCustomerData</pd:from>
+        <pd:to>CompletedLog</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>CompletedLog</pd:from>
+        <pd:to>Confirm</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>Confirm</pd:from>
+        <pd:to>End</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>IntialLog</pd:from>
+        <pd:to>ParseCustomerData</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>CatchAll</pd:from>
+        <pd:to>ExceptionLog</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>ExceptionLog</pd:from>
+        <pd:to>JMSSendToErrorQeueu</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>JMSSendToErrorQeueu</pd:from>
+        <pd:to>ConfirmOnError</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>ConfirmOnError</pd:from>
+        <pd:to>End</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+</pd:ProcessDefinition>
