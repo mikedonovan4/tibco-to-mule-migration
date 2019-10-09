@@ -11,50 +11,29 @@ http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/cu
 	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c8affae6-4cd7-4cd1-995d-ac89eba920f9" >
 		<http:listener-connection host="localhost" port="8083" />
 	</http:listener-config>
-	<file:config name="File_Config" doc:name="File Config" doc:id="36fe23df-9046-4f5c-a2d6-0d61c25ff6ef" >
-		<file:connection workingDir="${mule.home}/apps/${app.name}/" />
-	</file:config>
 	<flow name="tibco-to-mule-migrationFlow" doc:id="52633385-4840-4005-a216-56f24bf96959" >
 		<http:listener doc:name="Listener" doc:id="0a2f2e84-72b7-47a8-9f5f-bdb4565e22d7" config-ref="HTTP_Listener_config" path="/migration"/>
-		<ee:transform doc:name="set-logging-variables" doc:id="e7e7231b-b95f-4ca7-b7d4-430bb0fa2233" >
-			<ee:message >
-			</ee:message>
-			<ee:variables >
-				<ee:set-variable variableName="logVars" ><![CDATA[%dw 2.0
-output application/java
----
-{
-	flowName:"tibco-to-mule-migrationFlow"
-}]]></ee:set-variable>
-			</ee:variables>
-		</ee:transform>
-		<flow-ref doc:name="async-logging-start-subflow" doc:id="ebc5fa06-dc6c-4390-9535-eaa9456a3e04" name="async-logging-start-subflow"/>
-		<flow-ref doc:name="global-tibco-element-convert-subflow" doc:id="9525470b-fc1f-4d44-8ab6-fd88443282ce" name="global-tibco-element-properties-subflow" target="properties" targetValue="#[payload]"/>
-		<flow-ref doc:name="global-tibco-element-convert-subflow" doc:id="90ba18eb-8369-468d-8d82-4029b705b915" name="global-tibco-element-convert-subflow" target="configs" targetValue="#[payload]"/>
-		<flow-ref doc:name="global-tibco-flow-convert-subFlow" doc:id="530cf25a-d8c8-412f-8483-fd0f7515f0d7" name="global-tibco-flow-convert-subFlow"/>
-		<flow-ref doc:name="async-logging-end-subflow" doc:id="dce44b65-8186-4e00-bfa0-4ec794761d17" name="async-logging-end-subflow"/>
-		<error-handler >
-			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="9f347435-713f-4def-bced-ab72f4c51e20" >
-				<flow-ref doc:name="error-logging-subflow" doc:id="7dddf3ce-e177-4e1b-9510-d289ffc5d9d7" name="error-logging-subflow"/>
-			</on-error-continue>
-		</error-handler>
+		<flow-ref doc:name="global-tibco-element-propertiesFlow" doc:id="9525470b-fc1f-4d44-8ab6-fd88443282ce" name="global-tibco-element-propertiesFlow" target="properties" targetValue="#[payload]"/>
+		<flow-ref doc:name="global-tibco-element-convertFlow" doc:id="90ba18eb-8369-468d-8d82-4029b705b915" name="global-tibco-element-convertFlow" target="configs" targetValue="#[payload]"/>
+		<flow-ref doc:name="global-tibco-flow-convertFlow" doc:id="530cf25a-d8c8-412f-8483-fd0f7515f0d7" name="global-tibco-flow-convertFlow"/>
 	</flow>
 	
-	<sub-flow name="global-tibco-element-properties-subflow" doc:id="d262cf15-9e71-456c-ac3d-358bb9da4dde">
-		<file:read doc:name="Read" doc:id="3f86b24e-a622-4e73-9596-675d3d5ee762" config-ref="File_Config" path="inputFiles/Properties/default.substvar"/>
-		<ee:transform doc:name="Transform Message" doc:id="29cd7969-3a5b-4ea6-ace7-1ea91a8c620b">
-			<ee:message>
-				<ee:set-payload><![CDATA[%dw 2.0
+	<flow name="global-tibco-element-propertiesFlow" doc:id="d262cf15-9e71-456c-ac3d-358bb9da4dde">
+		<file:list doc:name="List" doc:id="f86a8ab7-ebd3-4060-90da-bf3a87be4130" directoryPath="${app.home}/tibco/defaultVars" recursive="true">
+			<file:matcher directories="EXCLUDE" />
+		</file:list>
+		<foreach doc:name="For Each" doc:id="93c5832a-f003-4129-9c3f-d7540b9d85dc" >
+			<ee:transform doc:name="Transform Message" doc:id="61bb8580-9ccc-4c58-9a63-d4f3921b7fa3" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
 output application/xml
 ---
 read(payload,'application/xml')]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-		<ee:transform doc:name="Transform Message" doc:id="b66612f2-b331-48e2-96ae-645d4f36795a">
-			<ee:message>
-			</ee:message>
-				<ee:variables>
-					<ee:set-variable variableName="testProp"><![CDATA[%dw 2.0
+				</ee:message>
+			</ee:transform>
+			<ee:transform doc:name="Transform Message" doc:id="36dec6ae-834a-4f89-91b6-c7e80f890129">
+			<ee:variables>
+				<ee:set-variable variableName="properties"><![CDATA[%dw 2.0
 output application/xml
 ---
 "mule" @("xmlns:ee": "http://www.mulesoft.org/schema/mule/ee/core", "xmlns:http": "http://www.mulesoft.org/schema/mule/http", 
@@ -63,27 +42,35 @@ output application/xml
 		"xsi:schemaLocation": "http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd " ++ 
 		"http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd " ++
 		"http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd"): {
-	((payload.repository.globalVariables.*globalVariable default []) map(record,count) -> {		
-		"global-property" @("doc:name": "Global Property", "doc:id": uuid(), "name": record.name, "value": (record.value default "NIL")): ""
+	(vars.properties.mule),
+	((payload.repository.globalVariables.*globalVariable default []) map(record,count) -> {
+		"global-property" @(
+			"doc:name": "Global Property", 
+			"doc:id": uuid(), 
+			"name": (attributes.path replace p('app.home') with "") ++ record.name, 
+			"value": (record.value default "")
+		): ""
 	})
 } ]]></ee:set-variable>
-				</ee:variables>
-		
-</ee:transform>
-		<ee:transform doc:name="Transform Message" doc:id="203bbb97-b57d-4025-bc0b-ff5b2a9538da" >
+			</ee:variables>
+		</ee:transform>
+		</foreach>
+		<ee:transform doc:name="Transform Message" doc:id="de0d4283-c900-4313-b727-0407dec10e24" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/xml
 ---
-vars.testProp]]></ee:set-payload>
+vars.properties]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+	</flow>
 	
-</sub-flow>
-	<sub-flow name="global-tibco-element-convert-subflow" doc:id="c3f1f2e0-d691-471d-b5f1-b3c441b6aca3" >
-		<file:list doc:name="List" doc:id="d1e6ff47-cc64-4c81-b776-2b81279fb88b" directoryPath="${mule.home}/apps/${app.name}/inputFiles/Config"/>
-		<foreach doc:name="For Each" doc:id="9e5afa76-835f-4a7b-9289-9ffdd78a95e3" >
-			<ee:transform doc:name="Setting mimeType" doc:id="10ca9b41-ce9f-4b24-b3de-d90c73e6323c" >
+	<flow name="global-tibco-element-convertFlow" doc:id="c3f1f2e0-d691-471d-b5f1-b3c441b6aca3" >
+		<file:list doc:id="9dfaf0b9-05cf-499e-b077-e5d1802b99c1" directoryPath="${app.home}/tibco/BusinessProcesses/SharedResources/Connections" recursive="true">
+			<file:matcher filenamePattern="*.shared*" directories="EXCLUDE" />
+		</file:list>
+		<foreach doc:name="For Each" doc:id="4b763720-f49c-49e7-9f5d-a635b31a0481" >
+			<ee:transform doc:name="Setting mimeType" doc:id="bba30934-6051-41b1-87a4-5ef175f93c99" >
 				<ee:message >
 					<ee:set-payload ><![CDATA[%dw 2.0
 output application/xml
@@ -91,29 +78,27 @@ output application/xml
 read(payload,'application/xml')]]></ee:set-payload>
 				</ee:message>
 			</ee:transform>
-			<ee:transform doc:name="Transform Message" doc:id="dac31860-9143-4b82-bb2a-bb0103afd62f">
+			<ee:transform doc:name="Transform Message" doc:id="446f5f86-53df-4ff1-acab-710a2ba51d57">
 			<ee:message>
 				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
-fun getIndex(obj,value) = (obj.*substitutionBindings map if($.@template == value) $$ else "") filter ($ != "")
+fun getIndex(obj,value) = (obj.*row map if($.PropertyName == value) $$ else "") filter ($ != "")
 ---
-(using (temp = payload.namedResource.'configuration') (
-	if (temp.@'type' == "httpconnector:HttpConnectorConfiguration" ) ({
+(using (temp=payload.httpSharedResource.config) 
+	if (payload.httpSharedResource != null) ({
 		"type": "httpListener",
-		"name": payload.namedResource.@name,
-		"host":	if (temp.host != null) temp.host
-				else if (getIndex(temp,"host") != []) (("\$/{" ++ temp.*substitutionBindings[(getIndex(temp,"host"))[0]].@propName ++ "}") replace "/" with "")
-				else "localhost",
-		"port": if (temp.port != null) temp.port
-				else if (getIndex(temp,"port") != []) (("\$/{" ++ temp.*substitutionBindings[(getIndex(temp,"port"))[0]].@propName ++ "}") replace "/" with "")
-				else "8888"
+		"name": "/BusinessProcesses/SharedResources/Connections/HTTP/" ++ (attributes.fileName default "Test"),
+		"host":	if(temp.Host contains "%%") (("\$/{" ++ (temp.Host replace "%%" with "") ++ "}") replace "/" with "") 
+				else (temp.Host default "localhost"),
+		"port": if(temp.Port contains "%%") (("\$/{" ++ (temp.Port replace "%%" with "") ++ "}") replace "/" with "") 
+				else (temp.Port default "8081")
 	})
 	else ({})
-))
+)
 ]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-			<ee:transform doc:name="Transform Message" doc:id="a35fa8cf-68cf-4046-9454-781a8137ee11" >
+			<ee:transform doc:name="Transform Message" doc:id="2f4f9879-1f6a-4338-9996-07572524a06d" >
 				<ee:variables >
 					<ee:set-variable variableName="configObject" ><![CDATA[%dw 2.0
 output application/json
@@ -125,7 +110,7 @@ flatten([
 				</ee:variables>
 			</ee:transform>
 		</foreach>
-		<ee:transform doc:name="Transform Message" doc:id="1810198a-6d05-4198-823f-5654f345920b" >
+		<ee:transform doc:name="Transform Message" doc:id="8d9319fd-0564-46f7-a60d-ce3aeb0ee972" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
@@ -133,7 +118,7 @@ output application/json
 vars.configObject filter ($ != {})]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<ee:transform doc:name="Transform Message" doc:id="986f47d6-ee54-463c-aa04-d21d00531deb" >
+		<ee:transform doc:name="Transform Message" doc:id="de6d943d-ae09-496d-887d-85a97691dbc9" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
 output application/xml
@@ -155,10 +140,10 @@ output application/xml
 } ]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-	</sub-flow>
+	</flow>
 	
-	<sub-flow name="global-tibco-flow-convert-subFlow" doc:id="8ca15972-3e98-4be9-a2a8-bcd36d943bc2" >
-		<file:read doc:name="Read" doc:id="48704050-c31a-4159-aed6-5eebfef6c06e" config-ref="File_Config" path="inputFiles/Flow/Process.bwp"/>
+	<flow name="global-tibco-flow-convertFlow" doc:id="8ca15972-3e98-4be9-a2a8-bcd36d943bc2" >
+		<file:read doc:name="Read" doc:id="b949cc54-c868-4658-9f78-bad9d9156fa5" path="C:\Users\rukaplesh\Desktop\Repo\Flow\Process.bwp"/>
 		<ee:transform doc:name="Transform Message" doc:id="2e63decc-de69-484b-9d0e-63a83074bdae" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
@@ -218,12 +203,6 @@ payload.'process'.'scope'.'flow'.*'extensionActivity' map ((payload01,payload01i
 			
 		   }
 	)
-	else if(payload01..'BWActivity'.@activityTypeID[0] == "bw.jms.receive")(
-		(payload01.receiveEvent.@'name'): {
-			"config-ref": payload.'process'.'variables'.*variable[?($.@name == payload01.receiveEvent.eventSource.BWActivity.activityConfig.properties.value.@connectionReference)][0].'from'.literal,
-			"destination": payload01.receiveEvent.eventSource.BWActivity.activityConfig.properties.value.@destinationName
-		   }
-	)
 		else ""
 ))
 ]]></ee:set-variable>
@@ -257,9 +236,6 @@ mule @('xmlns': "http://www.mulesoft.org/schema/mule/core",
 					'db:sql' : vars.tibcoComponentList[$.activityExtension.@'name'][0].sqlStatement
 				}
 			)
-			else if($..'BWActivity'.@activityTypeID[0] == "bw.jms.receive")(
-				'jms:listener' @('doc:name':"Listener" ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref':  vars.tibcoComponentList[$.receiveEvent.@'name'][0].'config-ref', "destination": vars.tibcoComponentList[$.receiveEvent.@'name'][0].destination):{}
-			)
 			else {}
 		) reduce ($$ ++ $)
 	))
@@ -281,11 +257,8 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 <flow doc:id="bff73d81-a042-4986-b790-d6a2854fa397" name="tibco-to-mule-migration">']]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<file:write doc:name="Write" doc:id="d6f6ee3c-cb3b-4fee-b55f-c373262eca53" path="outputFiles/output.xml" config-ref="File_Config">
-		</file:write>
-		<set-variable value="${mule.home}/apps/${app.name}/outputFiles/output.xml" doc:name="set-outPutFileDirectory" doc:id="9b6ee04f-e7bd-4972-a762-333b23045d9a" variableName="outPutFileDirectory"/>
-		<logger level="INFO" doc:name="Logger" doc:id="da183cdc-6c1e-4c54-926d-1cb37300e61a" message="Please check output file #[vars.outPutFileDirectory]"/>	
-	
-</sub-flow>
+		<file:write doc:name="Write" doc:id="d6f6ee3c-cb3b-4fee-b55f-c373262eca53" path="C:\Users\rukaplesh\Desktop\Repo\output.xml">
+		</file:write>	
+	</flow>
 	
 </mule>
