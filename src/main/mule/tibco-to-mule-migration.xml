@@ -270,7 +270,7 @@ payload.ProcessDefinition.*activity map (
 		($.@name): {
 			"doc:name" : $.@name,
 			"config-ref" : ($.config.ConnectionReference splitBy("/"))[-1],
-			"destination" : vars[$.config.SessionAttributes.destination],
+			"destination" : vars[$.config.SessionAttributes.destination] default "",
 			"persistentDelivery" : if($.config.ConfigurableHeaders.JMSDeliveryMode == "PERSISTENT") true else false,
 			"timeToLive" : $.config.ConfigurableHeaders.JMSExpiration,
 			"timeToLiveUnit" : "SECONDS",
@@ -285,19 +285,19 @@ payload.ProcessDefinition.*activity map (
 	else if($.resourceType == "ae.activities.JSONParserActivity") (
 		($.@name): {
 			"doc:name" : $.@name,
-			"message": "This connector doesn't exist in mule. Please do manual"		
+			"message": p('connectorNotFoundMessage')		
 			}
 	)
 	else if($.resourceType == "ae.activities.JSONRenderActivity") (
 		($.@name): {
 			"doc:name" : $.@name,
-			"message": "This connector doesn't exist in mule. Please do manual"		
+			"message": p('connectorNotFoundMessage')		
 			}
 	)
 	else if($.resourceType == "httppalette.httpWebResponse") (
 		($.@name): {
 			"doc:name" : $.@name,
-			"message": "This connector doesn't exist in mule. Please do manual"		
+			"message": p('connectorNotFoundMessage')	
 
 			}
 	)
