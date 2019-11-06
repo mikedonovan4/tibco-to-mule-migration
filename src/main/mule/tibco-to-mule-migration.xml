@@ -229,7 +229,35 @@ read(payload,'application/xml')]]></ee:set-payload>
 output application/java
 ---
 attributes.'fileName' default "" ++ ".xml"]]></ee:set-variable>
-				</ee:variables>
+					<ee:set-variable variableName="processConvertibleComponents" ><![CDATA[%dw 2.0
+output application/java
+var compList="ae.activities.log,ae.activities.JDBCUpdateActivity,ae.activities.JMSQueueSendActivity,ae.process.subprocess,ae.activities.JMSQueueEventSource,ae.activities.FileEventSourceResource,httppalette.httpEventSource"
+---
+payload.ProcessDefinition.*activity map (
+	if(compList splitBy (",") contains $.resourceType) ($.resourceType )
+	else ""
+)]]></ee:set-variable>
+					<ee:set-variable variableName="processCompList" ><![CDATA[%dw 2.0
+output application/java
+---
+payload.ProcessDefinition.*activity map (
+	($.resourceType )
+)]]></ee:set-variable>
+					<ee:set-variable variableName="sourceCompList" ><![CDATA[%dw 2.0
+output application/java
+---
+[payload.ProcessDefinition.starter.resourceType]]]></ee:set-variable>
+					<ee:set-variable variableName="sourceConvertibleComponents" ><![CDATA[%dw 2.0
+output application/java
+var sourceCompList="ae.activities.JMSQueueEventSource,ae.activities.FileEventSourceResource,httppalette.httpEventSource"
+---
+
+if(sourceCompList splitBy (",") contains payload.ProcessDefinition.starter.resourceType) [payload.ProcessDefinition.starter.resourceType]
+else []
+
+]]></ee:set-variable>
+				
+</ee:variables>
 			</ee:transform>
 			<ee:transform doc:name="source/process-components" doc:id="dbf425e1-573b-49b4-af37-e197cf98d90d">
 				<ee:variables>
@@ -325,7 +353,16 @@ payload.ProcessDefinition.*activity map (
 	)
 	else ""
 )]]></ee:set-variable>
-				</ee:variables>
+					<ee:set-variable variableName="AllComponents" ><![CDATA[%dw 2.0
+output application/java
+---
+(vars.AllComponents default [] ++ vars.processCompList default [] ++ vars.sourceCompList default [])]]></ee:set-variable>
+					<ee:set-variable variableName="AllConvertibleComps" ><![CDATA[%dw 2.0
+output application/java
+---
+(vars.AllConvertibleComps default [] ++ vars.processConvertibleComponents[?($ != "")] default [] ++ vars.sourceConvertibleComponents default [])]]></ee:set-variable>
+				
+</ee:variables>
 			</ee:transform>
 			<ee:transform doc:name="transform as mule-xml" doc:id="b1e3813a-f17a-403a-aa36-c014d156c308">
 				<ee:message>
@@ -404,13 +441,39 @@ mule @('xmlns': "http://www.mulesoft.org/schema/mule/core",
 
 ]]></ee:set-payload>
 				</ee:message>
-			</ee:transform>
+				<ee:variables >
+				</ee:variables>
+			
+</ee:transform>
 			<file:write doc:name="Write-output files" doc:id="2217274f-83bd-456b-a331-3833d6efa525" path="#['outputFiles/' ++ vars.fileName]" config-ref="File_Config"/>
 		</foreach>
+		<ee:transform doc:name="analyser-mapping" doc:id="fea23f30-d5f9-4d60-9c31-4a9289a817b4" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="analyserPayload" ><![CDATA[%dw 2.0
+output application/csv
+var allConvertibleComponents= (vars.AllConvertibleComps) distinctBy $
+var notRequiredComponents= ((vars.AllComponents) -- (vars.AllConvertibleComps)) distinctBy $
+var sizeOfConvertibleComps= sizeOf((vars.AllConvertibleComps default []))
+var sizeOfCompsNotRequired= sizeOf(vars.AllComponents[?($ != null)] -- vars.AllConvertibleComps)
+---
+vars.AllComponents map {
+	'NUM OF CONVERTIBLE COMPONENTS': if($$ == 0)(sizeOfConvertibleComps) else "",
+	'NUM OF COMPONENTS NOT REQUIRED': if($$ == 0)(sizeOfCompsNotRequired) else "",
+	'CONVERTIBLE COMPONENTS': allConvertibleComponents[$$],
+	'COMPONENTS NOT REQUIRED': notRequiredComponents[$$]
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<file:write doc:name="Write-analyser-file" doc:id="fb598845-9b05-454e-ae8d-a9db924ce3ef" config-ref="File_Config" path="outputFiles/analyser.csv">
+			<file:content ><![CDATA[#[vars.analyserPayload]]]></file:content>
+		</file:write>
 		<logger level="INFO" doc:name="Logger" doc:id="f55cf8ed-fc10-4c24-b74b-3c6a4311f9b1" message="#['Transformation process completed']"/>
 		<set-variable value="${mule.home}/apps/${app.name}/outputFiles/" doc:name="log-outPutFileDirectory" doc:id="9b6ee04f-e7bd-4972-a762-333b23045d9a" variableName="outPutFileDirectory"/>
 		<set-payload value="#[vars.outPutFileDirectory]" doc:name="output file directory" doc:id="7d69d560-7863-48b6-a8f9-b4db006c39fb" />
-		<logger level="INFO" doc:name="Logger" doc:id="da183cdc-6c1e-4c54-926d-1cb37300e61a" message="Please check output file #[vars.outPutFileDirectory]"/>	
-	</sub-flow>
+		<logger level="INFO" doc:name="Logger" doc:id="da183cdc-6c1e-4c54-926d-1cb37300e61a" message="Please check output file #[vars.outPutFileDirectory]" />	
+	
+</sub-flow>
 	
 </mule>
