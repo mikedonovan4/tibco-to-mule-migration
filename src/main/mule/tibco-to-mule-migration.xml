@@ -351,6 +351,11 @@ payload.ProcessDefinition.*activity map (
 			"name" : ($.config.processName splitBy("/"))[-1]
 			}
 	)
+	else if($.resourceType == "ae.activities.MapperActivity") (
+		($.@name): {
+			"doc:name" : $.@name
+			}
+	)
 	else ""
 )]]></ee:set-variable>
 					<ee:set-variable variableName="AllComponents" ><![CDATA[%dw 2.0
@@ -420,7 +425,7 @@ mule @('xmlns': "http://www.mulesoft.org/schema/mule/core",
 			else if($.resourceType == "ae.activities.JMSQueueSendActivity")(
 				'jms:publish' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[$.@name][0].'config-ref'):{}
 			)
-		else if($.resourceType == "ae.activities.JSONParserActivity")(
+		    else if($.resourceType == "ae.activities.JSONParserActivity")(
 				'logger' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO",'message': upper(vars.processComponents[$.@name][0].'message')):{}
 			)
 			
@@ -433,6 +438,15 @@ mule @('xmlns': "http://www.mulesoft.org/schema/mule/core",
 			else if($.resourceType == "ae.process.subprocess")(
 				'flow-ref' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[$.@name][0].'config-ref'):{}
 			)
+			else if($.resourceType == "ae.activities.MapperActivity")(
+         		 'ee:transform' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190"): {
+         		 'ee:message' :
+                 'ee:set-payload' : ('%dw 2.0
+output application/java
+---
+{
+}') as CData
+            })
 			else {}
 		) reduce ($$ ++ $)
 	)})

@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pd:ProcessDefinition xmlns:ns2="http://www.tibco.com/pe/DeployedVarsType" xmlns:pd="http://xmlns.tibco.com/bw/process/2003" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:ns1="http://www.tibco.com/pe/WriteToLogActivitySchema" xmlns:ns="http://www.tibco.com/namespaces/tnt/plugins/jms" xmlns:pfx12="http://www.tibco.com/ns/no_namespace_schema_location/SharedResources/Schemas/GSEM/eCPExtMessage.xsd" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:tib="http://www.tibco.com/bw/xslt/custom-functions" xmlns:pfx3="http://www.tibco.com/ns/no_namespace_schema_location/SharedResources/Schemas/NotificationSchema.xsd" xmlns:ns12="http://www.tibco.com/namespaces/tnt/plugins/json">
+    <xsd:import namespace="http://www.tibco.com/ns/no_namespace_schema_location/SharedResources/Schemas/NotificationSchema.xsd" schemaLocation="/SharedResources/Schemas/NotificationSchema.xsd"/>
+    <xsd:import namespace="http://www.tibco.com/ns/no_namespace_schema_location/SharedResources/Schemas/GSEM/eCPExtMessage.xsd" schemaLocation="/SharedResources/Schemas/GSEM/eCPExtMessage.xsd"/>
+    <pd:name>BusinessProcesses/Notification/StarterProcess/PartnerNotification.process</pd:name>
+    <pd:startName>PartnerNotificationQueueReceiver</pd:startName>
+    <pd:startX>0</pd:startX>
+    <pd:startY>0</pd:startY>
+    <pd:returnBindings/>
+    <pd:starter name="PartnerNotificationQueueReceiver">
+        <pd:type>com.tibco.plugin.jms.JMSQueueEventSource</pd:type>
+        <pd:resourceType>ae.activities.JMSQueueEventSource</pd:resourceType>
+        <pd:x>73</pd:x>
+        <pd:y>106</pd:y>
+        <config>
+            <PermittedMessageType>Text</PermittedMessageType>
+            <SessionAttributes>
+                <transacted>false</transacted>
+                <acknowledgeMode>23</acknowledgeMode>
+                <maxSessions>1</maxSessions>
+                <destination>%%CDAX/Outbound/Notifications/Destination/PartnerNotificationQueue%%</destination>
+            </SessionAttributes>
+            <ConfigurableHeaders>
+                <JMSDeliveryMode>PERSISTENT</JMSDeliveryMode>
+                <JMSExpiration>0</JMSExpiration>
+                <JMSPriority>4</JMSPriority>
+            </ConfigurableHeaders>
+            <ConnectionReference>/SharedResources/Connections/JMS/JMS Connection.sharedjmscon</ConnectionReference>
+        </config>
+        <pd:inputBindings/>
+    </pd:starter>
+    <pd:endName>End</pd:endName>
+    <pd:endX>1021</pd:endX>
+    <pd:endY>106</pd:endY>
+    <pd:errorSchemas/>
+    <pd:processVariables/>
+    <pd:targetNamespace>http://xmlns.example.com/1477572506350</pd:targetNamespace>
+    <pd:activity name="Catch">
+        <pd:type>com.tibco.pe.core.CatchActivity</pd:type>
+        <pd:resourceType>ae.activities.catch</pd:resourceType>
+        <pd:x>753</pd:x>
+        <pd:y>247</pd:y>
+        <pd:handler>true</pd:handler>
+        <config>
+            <catchAll>true</catchAll>
+        </config>
+        <pd:inputBindings/>
+    </pd:activity>
+    <pd:activity name="CompletedLog">
+        <pd:type>com.tibco.pe.core.WriteToLogActivity</pd:type>
+        <pd:resourceType>ae.activities.log</pd:resourceType>
+        <pd:x>889</pd:x>
+        <pd:y>106</pd:y>
+        <config>
+            <role>User</role>
+        </config>
+        <pd:inputBindings>
+            <ns1:ActivityInput>
+                <message>
+                    <xsl:value-of select="$SendToGSEMSystem/root/Response"/>
+                </message>
+            </ns1:ActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="ExceptionLog">
+        <pd:type>com.tibco.pe.core.WriteToLogActivity</pd:type>
+        <pd:resourceType>ae.activities.log</pd:resourceType>
+        <pd:x>867</pd:x>
+        <pd:y>247</pd:y>
+        <config>
+            <role>Exception</role>
+        </config>
+        <pd:inputBindings>
+            <ns1:ActivityInput>
+                <message>
+                    <xsl:value-of select="tib:trim($Catch/exceptiondata)"/>
+                </message>
+            </ns1:ActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="GetVariable">
+        <pd:type>com.tibco.pe.core.GetSharedVariableActivity</pd:type>
+        <pd:resourceType>ae.activities.getSharedVariable</pd:resourceType>
+        <pd:x>473</pd:x>
+        <pd:y>106</pd:y>
+        <config>
+            <variableConfig>/SharedResources/SharedVariables/PartnerKeys.sharedvariable</variableConfig>
+        </config>
+        <pd:inputBindings/>
+    </pd:activity>
+    <pd:activity name="IntialLog">
+        <pd:type>com.tibco.pe.core.WriteToLogActivity</pd:type>
+        <pd:resourceType>ae.activities.log</pd:resourceType>
+        <pd:x>162</pd:x>
+        <pd:y>202</pd:y>
+        <config>
+            <role>User</role>
+        </config>
+        <pd:inputBindings>
+            <ns1:ActivityInput>
+                <message>
+                    <xsl:value-of select="concat('PartnerNotification service started processing message',$PartnerNotificationQueueReceiver/ns:ActivityOutput/Body)"/>
+                </message>
+            </ns1:ActivityInput>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="Parse JSON">
+        <pd:type>com.tibco.plugin.json.activities.JSONParserActivity</pd:type>
+        <pd:resourceType>ae.activities.JSONParserActivity</pd:resourceType>
+        <pd:x>207</pd:x>
+        <pd:y>105</pd:y>
+        <config>
+            <SchemaType>xsdType</SchemaType>
+            <BadgerfishCheck>false</BadgerfishCheck>
+            <ActivityOutputEditor ref="pfx3:NotificationEvents"/>
+        </config>
+        <pd:inputBindings>
+            <ns12:ActivityInputClass>
+                <jsonString>
+                    <xsl:value-of select="$PartnerNotificationQueueReceiver/ns:ActivityOutput/Body"/>
+                </jsonString>
+            </ns12:ActivityInputClass>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="PartnerNotificationReqConfirm">
+        <pd:type>com.tibco.pe.core.ConfirmActivity</pd:type>
+        <pd:resourceType>activity.confirm</pd:resourceType>
+        <pd:x>764</pd:x>
+        <pd:y>106</pd:y>
+        <config>
+            <ConfirmEvent>PartnerNotificationQueueReceiver</ConfirmEvent>
+        </config>
+        <pd:inputBindings/>
+    </pd:activity>
+    <pd:activity name="PartnerNotificationReqException">
+        <pd:type>com.tibco.pe.core.ConfirmActivity</pd:type>
+        <pd:resourceType>activity.confirm</pd:resourceType>
+        <pd:x>1017</pd:x>
+        <pd:y>248</pd:y>
+        <config>
+            <ConfirmEvent>PartnerNotificationQueueReceiver</ConfirmEvent>
+        </config>
+        <pd:inputBindings/>
+    </pd:activity>
+    <pd:activity name="SendToGSEMSystem">
+        <pd:type>com.tibco.pe.core.CallProcessActivity</pd:type>
+        <pd:resourceType>ae.process.subprocess</pd:resourceType>
+        <pd:x>592</pd:x>
+        <pd:y>109</pd:y>
+        <config>
+            <processName>/BusinessProcesses/GSEMProcess/SendToGSEMSystem.process</processName>
+        </config>
+        <pd:inputBindings>
+            <root>
+                <POSTData>
+                    <xsl:value-of select="tib:render-xml($Partner_PartOrder/eCPExtMessage)"/>
+                </POSTData>
+                <xsl:variable name="var" select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent/RemoteAgentName"/>
+                <AgenKey>
+                    <xsl:value-of select="$GetVariable/root/AgentData[AgentName=$var]/AgentKey"/>
+                </AgenKey>
+                <RequesterID>
+                    <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/RequesterCaseID"/>
+                </RequesterID>
+            </root>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:activity name="Partner_PartOrder">
+        <pd:type>com.tibco.plugin.mapper.MapperActivity</pd:type>
+        <pd:resourceType>ae.activities.MapperActivity</pd:resourceType>
+        <pd:x>337</pd:x>
+        <pd:y>105</pd:y>
+        <config>
+            <element ref="pfx12:eCPExtMessage"/>
+        </config>
+        <pd:inputBindings>
+            <eCPExtMessage>
+                <eCPExtControl>
+                    <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="Version">
+                        <xsl:value-of select="1.0"/>
+                    </xsl:attribute>
+                    <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="Name">
+                        <xsl:value-of select="'SDK Extension'"/>
+                    </xsl:attribute>
+                    <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="TransactionType">
+                        <xsl:value-of select="6"/>
+                    </xsl:attribute>
+                    <xsl:value-of select="''"/>
+                </eCPExtControl>
+                <EXT_SERVICE_INCIDENT>
+                    <PARTORDER>
+                        <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="PartOrderNumber">
+                            <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/PartOrderNumber"/>
+                        </xsl:attribute>
+                        <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="LogisticsOrderNumber">
+                            <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/LogisticsOrderNumber"/>
+                        </xsl:attribute>
+                        <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="OrganizationName">
+                            <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/OrganizationName"/>
+                        </xsl:attribute>
+                        <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="ReceivedInstructions">
+                            <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/ReceivedInstructions"/>
+                        </xsl:attribute>
+                        <ADDRESS>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="GeoAddress1">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/ShippingAddressLine1"/>
+                            </xsl:attribute>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="GeoAddress2">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/ShippingAddressLine2"/>
+                            </xsl:attribute>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="City">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/ShippingCity"/>
+                            </xsl:attribute>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="Region">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/ShippingRegion"/>
+                            </xsl:attribute>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="PostalCode">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/ShippingPostalCode"/>
+                            </xsl:attribute>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="Country">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/ShippingCountry"/>
+                            </xsl:attribute>
+                        </ADDRESS>
+                        <PARTORDERLINEITEM>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="LineItemID">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/WFMLIneNumber"/>
+                            </xsl:attribute>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="PartNumber">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/PartNumber"/>
+                            </xsl:attribute>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="PartDescription">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/PartDescription"/>
+                            </xsl:attribute>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="PartStatus">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/PartLineitemStatus"/>
+                            </xsl:attribute>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="ETA">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/ETA"/>
+                            </xsl:attribute>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="CarrierID">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/CarrierId"/>
+                            </xsl:attribute>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="TrackingNumber">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/TrackingNumber"/>
+                            </xsl:attribute>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="SourcedLocation">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/SourcedLocation"/>
+                            </xsl:attribute>
+                            <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="RMANumber">
+                                <xsl:value-of select="$Parse-JSON/ns12:ActivityOutputClass/NotificationEvents/NotificationEvent[1]/PartOrder/RMANumber"/>
+                            </xsl:attribute>
+                            <xsl:value-of select="''"/>
+                        </PARTORDERLINEITEM>
+                    </PARTORDER>
+                </EXT_SERVICE_INCIDENT>
+                <TRANSACTION>
+                    <xsl:attribute xmlns:xsl="http://www.w3.org/1999/XSL/Transform" name="TransactionType">
+                        <xsl:value-of select="6"/>
+                    </xsl:attribute>
+                    <xsl:value-of select="''"/>
+                </TRANSACTION>
+            </eCPExtMessage>
+        </pd:inputBindings>
+    </pd:activity>
+    <pd:transition>
+        <pd:from>PartnerNotificationQueueReceiver</pd:from>
+        <pd:to>IntialLog</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>PartnerNotificationReqConfirm</pd:from>
+        <pd:to>CompletedLog</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>Catch</pd:from>
+        <pd:to>ExceptionLog</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>ExceptionLog</pd:from>
+        <pd:to>PartnerNotificationReqException</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>PartnerNotificationReqException</pd:from>
+        <pd:to>End</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>CompletedLog</pd:from>
+        <pd:to>End</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>Parse JSON</pd:from>
+        <pd:to>Partner_PartOrder</pd:to>
+        <pd:xpathDescription/>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>IntialLog</pd:from>
+        <pd:to>Parse JSON</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>GetVariable</pd:from>
+        <pd:to>SendToGSEMSystem</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>SendToGSEMSystem</pd:from>
+        <pd:to>PartnerNotificationReqConfirm</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+    <pd:transition>
+        <pd:from>Partner_PartOrder</pd:from>
+        <pd:to>GetVariable</pd:to>
+        <pd:lineType>Default</pd:lineType>
+        <pd:lineColor>-16777216</pd:lineColor>
+        <pd:conditionType>always</pd:conditionType>
+    </pd:transition>
+</pd:ProcessDefinition>
