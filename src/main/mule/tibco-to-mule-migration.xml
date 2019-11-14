@@ -375,82 +375,112 @@ output application/java
 output application/xml
 ---
 mule @('xmlns': "http://www.mulesoft.org/schema/mule/core",
-	'xmlns:doc': "http://www.mulesoft.org/schema/mule/documentation",
-	'xmlns:xsi' :"http://www.w3.org/2001/XMLSchema-instance",
-	'xmlns:jms':"http://www.mulesoft.org/schema/mule/jms",
-	'xmlns:file':"http://www.mulesoft.org/schema/mule/file",
-	'xmlns:http':"http://www.mulesoft.org/schema/mule/http",
-	'xmlns:db':"http://www.mulesoft.org/schema/mule/db",
-	'xsi:schemaLocation' : "http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd " ++
-	"http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd " ++
-	"http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd " ++
-    "http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd"):{	    
+       'xmlns:doc': "http://www.mulesoft.org/schema/mule/documentation",
+       'xmlns:xsi' :"http://www.w3.org/2001/XMLSchema-instance",
+       'xmlns:jms':"http://www.mulesoft.org/schema/mule/jms",
+       'xmlns:file':"http://www.mulesoft.org/schema/mule/file",
+       'xmlns:http':"http://www.mulesoft.org/schema/mule/http",
+       'xmlns:db':"http://www.mulesoft.org/schema/mule/db",
+       'xsi:schemaLocation' : "http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd " ++
+       "http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd " ++
+       "http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd " ++
+    "http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd"):{     
     (flow @(name: vars.fileName, 'doc:id': "c2f9df18-fe5d-415b-9142-f9274d00127d"): {
-    	(if(payload.ProcessDefinition.starter.resourceType == "ae.activities.JMSQueueEventSource")(
-						'jms:listener' @('doc:name': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'doc:name',
-						'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190",
-				        'config-ref': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'config-ref',
-				        'destination': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'destination',
-				        'persistentDelivery': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'persistentDelivery',
-				        'timeToLive': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'timeToLive',
-				        'timeToLiveUnit': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'timeToLiveUnit',
-				        'priority': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'priority'
-				):{}
-			)
-			else if(payload.ProcessDefinition.starter.resourceType == "ae.activities.FileEventSourceResource")(
-						'file:listener' @('doc:name': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'doc:name',
-						'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190",
-				        'config-ref': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'config-ref'
-						):{}
-					
-						)
-			else if(payload.ProcessDefinition.starter.resourceType == "httppalette.httpEventSource")(
-						'http:listener' @('doc:name': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'doc:name',
-						'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190",
-						'path': "/",
-				        'config-ref': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'config-ref'
-				  ):{}
-				  )
-			
-		  else {}),
-		(payload.ProcessDefinition.*activity map (
-			if($.resourceType == "ae.activities.log")(
-				'logger' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO",'message': upper(vars.processComponents[$.@name][0].'message')):{}
-			)
-			else if($.resourceType == "ae.activities.JDBCUpdateActivity")(
-				'db:insert' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[$.@name][0].'config-ref'):{
-					'db:sql': vars.processComponents[$.@name][0].'sql'
-				}
-			)
-			else if($.resourceType == "ae.activities.JMSQueueSendActivity")(
-				'jms:publish' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[$.@name][0].'config-ref'):{}
-			)
-		    else if($.resourceType == "ae.activities.JSONParserActivity")(
-				'logger' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO",'message': upper(vars.processComponents[$.@name][0].'message')):{}
-			)
-			
-			else if($.resourceType == "ae.activities.JSONRenderActivity")(
-				'logger' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190", 'level': "INFO",'message': upper(vars.processComponents[$.@name][0].'message')):{}
-			)
-			else if($.resourceType == "httppalette.httpWebResponse")(
-				'logger' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO",'message': upper(vars.processComponents[$.@name][0].'message')):{}
-			)
-			else if($.resourceType == "ae.process.subprocess")(
-				'flow-ref' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[$.@name][0].'config-ref'):{}
-			)
-			else if($.resourceType == "ae.activities.MapperActivity")(
-         		 'ee:transform' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190"): {
-         		 'ee:message' :
+       (if(payload.ProcessDefinition.starter.resourceType == "ae.activities.JMSQueueEventSource")(
+                                       'jms:listener' @('doc:name': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'doc:name',
+                                       'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190",
+                                  'config-ref': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'config-ref',
+                                  'destination': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'destination',
+                                  'persistentDelivery': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'persistentDelivery',
+                                  'timeToLive': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'timeToLive',
+                                  'timeToLiveUnit': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'timeToLiveUnit',
+                                  'priority': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'priority'
+                          ):{}
+                    )
+                    else if(payload.ProcessDefinition.starter.resourceType == "ae.activities.FileEventSourceResource")(
+                                       'file:listener' @('doc:name': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'doc:name',
+                                       'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190",
+                                  'config-ref': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'config-ref'
+                                       ):{}
+                                 
+                                       )
+                    else if(payload.ProcessDefinition.starter.resourceType == "httppalette.httpEventSource")(
+                                       'http:listener' @('doc:name': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'doc:name',
+                                       'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190",
+                                       'path': "/",
+                                  'config-ref': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'config-ref'
+                            ):{}
+                            )
+                    
+               else {}),
+             (payload.ProcessDefinition.*activity map (
+                    if($.resourceType == "ae.activities.log")(
+                          'logger' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO",'message': upper(vars.processComponents[$.@name][0].'message')):{}
+                    )
+                    else if($.resourceType == "ae.activities.JDBCUpdateActivity")(
+                          'db:insert' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[$.@name][0].'config-ref'):{
+                                 'db:sql': vars.processComponents[$.@name][0].'sql'
+                          }
+                    )
+                    else if($.resourceType == "ae.activities.JMSQueueSendActivity")(
+                          'jms:publish' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[$.@name][0].'config-ref'):{}
+                    )
+                 else if($.resourceType == "ae.activities.JSONParserActivity")(
+                          'logger' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO",'message': upper(vars.processComponents[$.@name][0].'message')):{}
+                    )
+                    
+                    else if($.resourceType == "ae.activities.JSONRenderActivity")(
+                          'logger' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190", 'level': "INFO",'message': upper(vars.processComponents[$.@name][0].'message')):{}
+                    )
+                    else if($.resourceType == "httppalette.httpWebResponse")(
+                          'logger' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO",'message': upper(vars.processComponents[$.@name][0].'message')):{}
+                    )
+                    else if($.resourceType == "ae.process.subprocess")(
+                          'flow-ref' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[$.@name][0].'config-ref'):{}
+                    )
+                    else if($.resourceType == "ae.activities.MapperActivity")(
+                     'ee:transform' @('doc:name': vars.processComponents[$.@name][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190"): {
+                     'ee:message' :
                  'ee:set-payload' : ('%dw 2.0
 output application/java
 ---
 {
 }') as CData
             })
-			else {}
-		) reduce ($$ ++ $)
-	)})
+                    else {}
+             ) reduce ($$ ++ $)
+       ),
+       (
+             'logger' @('doc:name':"Logger",'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO", 'message': '#[output application/json ---{
+  "apiName": "tibco-to-mule-migration",
+  "flowName": "tibco-to-mule-migrationFlow Ended",
+  "sourceName": "Tibco",
+  "targetName": "MuleSoft",
+  "correlationId": correlationId,
+  "EndTransactionTimestamp": now() as LocalDateTime
+}]'):{}
+       ),
+      'error-handler':{ 
+       (
+             'on-error-continue' @("enableNotifications":"true","logException":"true",'doc:name':"On Error Continue",'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ):{
+             		(
+                     'ee:transform' @('doc:name': "Transform Message" ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190"): {
+                     'ee:message' :
+                 'ee:set-payload' : ('%dw 2.0
+output application/java
+---
+{
+	errorMessage: error.description,
+	transactionId: correlationId,
+	timestamp: now()
+}') as CData
+            })
+             }
+       )}
+       
+       })
 }
+
 
 
 ]]></ee:set-payload>
