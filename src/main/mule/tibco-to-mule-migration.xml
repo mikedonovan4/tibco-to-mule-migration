@@ -234,7 +234,7 @@ output application/java
 attributes.'fileName' default "" ++ ".xml"]]></ee:set-variable>
 					<ee:set-variable variableName="processConvertibleComponents" ><![CDATA[%dw 2.0
 output application/java
-var compList="ae.activities.log,ae.activities.JDBCUpdateActivity,ae.activities.JMSQueueSendActivity,ae.process.subprocess,ae.activities.JMSQueueEventSource,ae.activities.FileEventSourceResource,httppalette.httpEventSource"
+var compList="ae.activities.log,ae.activities.JDBCUpdateActivity,ae.activities.JMSQueueSendActivity,ae.process.subprocess,ae.activities.JMSQueueEventSource,ae.activities.FileEventSourceResource,httppalette.httpEventSource,ae.activities.MapperActivity,ae.activities.FileWriteActivity"
 ---
 payload.ProcessDefinition.*activity map (
 	if(compList splitBy (",") contains $.resourceType) ($.resourceType )
@@ -265,9 +265,18 @@ var fromList =payload.ProcessDefinition.*transition map ($.'from')
 var toList =payload.ProcessDefinition.*transition map ($.'to')
 var sourceComp= fromList[?(!(toList contains $))]
 var transitionList =  payload.ProcessDefinition.*transition map (($.'from') : ($.'to'))
-fun forEachTransition(data) = using(temp=transitionList[data][0])(if(temp != null) (temp ++ "," ++ forEachTransition(temp)) else data)
+fun xPath(key)= [(key): (payload.ProcessDefinition.*transition[?($.'from' == key)] map (($.'to'): ($.xpath)))]
+fun forEachTransition(data) = using(temp=transitionList[data])(if(sizeOf(temp default []) > 1) ("CHOICEROUTER-"++ data ++ "," ++ forEachTransition(temp[0]))
+	                          else if((sizeOf(temp default []) >0) and (temp != null)) (temp[0] ++ "," ++ forEachTransition(temp[0]))
+	                          else data)
+fun choiceComponents(data)=  using(temp=transitionList[data])(if(sizeOf(temp default []) > 1)(xPath(data) ++ (choiceComponents(temp[0]) default [])) 
+	                                                          else if((sizeOf(temp default []) > 0) and (temp != null))(choiceComponents(temp[0]))
+	                                                          else temp)
 --- 
-(forEachTransition(sourceComp[0]) splitBy(","))[0 to -2]]]></ee:set-variable>
+{
+	list: (forEachTransition(sourceComp[0]) splitBy(","))[0 to -2],
+	choice: choiceComponents(sourceComp[0])
+}]]></ee:set-variable>
 				
 </ee:variables>
 			</ee:transform>
@@ -333,31 +342,6 @@ payload.ProcessDefinition.*activity map (
 			"priority" : $.config.ConfigurableHeaders.JMSPriority		
 			}
 	)
-	else if($.resourceType == "ae.activities.catch") (
-		($.@name): {
-			"doc:name" : $.@name,
-			"message": p('connectorNotFoundMessage')		
-			}
-	)
-	else if($.resourceType == "ae.activities.JSONParserActivity") (
-		($.@name): {
-			"doc:name" : $.@name,
-			"message": p('connectorNotFoundMessage')		
-			}
-	)
-	else if($.resourceType == "ae.activities.JSONRenderActivity") (
-		($.@name): {
-			"doc:name" : $.@name,
-			"message": p('connectorNotFoundMessage')		
-			}
-	)
-	else if($.resourceType == "httppalette.httpWebResponse") (
-		($.@name): {
-			"doc:name" : $.@name,
-			"message": p('connectorNotFoundMessage')	
-
-			}
-	)
 	else if($.resourceType == "ae.process.subprocess") (
 		($.@name): {
 			"doc:name" : $.@name,
@@ -367,6 +351,12 @@ payload.ProcessDefinition.*activity map (
 	else if($.resourceType == "ae.activities.MapperActivity") (
 		($.@name): {
 			"doc:name" : $.@name
+			}
+	)
+	else if($.resourceType == "ae.activities.FileWriteActivity") (
+		($.@name): {
+			"doc:name" : $.@name,
+			"path": $.inputBindings.WriteActivityInputTextClass.fileName.'value-of'.@select
 			}
 	)
 	else (
@@ -392,6 +382,41 @@ output application/java
 				<ee:message>
 					<ee:set-payload><![CDATA[%dw 2.0
 output application/xml
+import * from dw::core::Objects
+import * from dw::core::Arrays
+fun componentBuilder(resourceType,name)=(
+					if(resourceType == "ae.activities.log")(
+                          'logger' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO",'message': upper(vars.processComponents[name[0]][0].'message')):{}
+                    )
+                    
+                    else if(resourceType == "ae.activities.JDBCUpdateActivity")(
+                          'db:insert' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[name[0]][0].'config-ref'):{
+                                 'db:sql': vars.processComponents[name[0]][0].'sql'
+                          }
+                    )
+                    else if(resourceType == "ae.activities.JMSQueueSendActivity")(
+                          'jms:publish' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[name[0]][0].'config-ref'):{}
+                    )
+                    else if(resourceType == "ae.process.subprocess")(
+                          'flow-ref' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[name[0]][0].'config-ref'):{}
+                    )
+                    else if(resourceType == "ae.activities.FileWriteActivity")(
+                          'file:write' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'path': vars.processComponents[name[0]][0].'path'):{}
+                    )
+                    else if(resourceType == "ae.activities.MapperActivity")(
+                     'ee:transform' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190"): {
+                     'ee:message' :
+                 'ee:set-payload' : ('%dw 2.0
+output application/java
+---
+{
+}') as CData
+            })
+            		else (
+                    	'logger' @('doc:name': vars.processComponents[name[0] default ''][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO",'message': upper(vars.processComponents[name[0] default ''][0].'message')):{}
+                    )
+	
+)
 ---
 mule @('xmlns': "http://www.mulesoft.org/schema/mule/core",
        'xmlns:doc': "http://www.mulesoft.org/schema/mule/documentation",
@@ -408,20 +433,18 @@ mule @('xmlns': "http://www.mulesoft.org/schema/mule/core",
        (if(payload.ProcessDefinition.starter.resourceType == "ae.activities.JMSQueueEventSource")(
                                        'jms:listener' @('doc:name': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'doc:name',
                                        'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190",
-                                  'config-ref': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'config-ref',
-                                  'destination': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'destination',
-                                  'persistentDelivery': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'persistentDelivery',
-                                  'timeToLive': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'timeToLive',
-                                  'timeToLiveUnit': vars.sourceComponent[payload
-                                  	.ProcessDefinition.starter.@name
-                                  ][0].'timeToLiveUnit',
-                                  'priority': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'priority'
+                                       'config-ref': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'config-ref',
+                                  	   'destination': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'destination',
+                                       'persistentDelivery': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'persistentDelivery',
+                                       'timeToLive': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'timeToLive',
+                                       'timeToLiveUnit': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'timeToLiveUnit',
+                                       'priority': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'priority'
                           ):{}
                     )
                     else if(payload.ProcessDefinition.starter.resourceType == "ae.activities.FileEventSourceResource")(
                                        'file:listener' @('doc:name': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'doc:name',
                                        'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190",
-                                  'config-ref': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'config-ref'
+                                       'config-ref': vars.sourceComponent[payload.ProcessDefinition.starter.@name][0].'config-ref'
                                        ):{}
                                  
                                        )
@@ -434,46 +457,28 @@ mule @('xmlns': "http://www.mulesoft.org/schema/mule/core",
                             )
                     
                else {}),
-             (vars.orderedComponentList[?(($ != null) and ($ != "End"))] map ((payload01,payload01index)-> (
-                    using(temp= payload.ProcessDefinition.*activity[?($.@name == payload01)][0],name=payload.ProcessDefinition.*activity[?($.@name == payload01)].@name)(
-                    if(temp.resourceType == "ae.activities.log")(
-                          'logger' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO",'message': upper(vars.processComponents[name[0]][0].'message')):{}
+             (vars.orderedComponentList.list[?(($ != null) and ($ != "End"))] map ((payload01,payload01index)-> (
+             	      if(payload01 startsWith("CHOICEROUTER-"))(
+                          'choice' @('doc:name': 'Choice' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190"):(
+                          	vars.orderedComponentList.choice[0].ParseRequest map((choicePayload,choiceIndex)-> (
+                          		using(choiceExp=choicePayload[flatten(keySet(choicePayload))[0]],choiceName=flatten(keySet(choicePayload)))
+                          		(using(choiceResourceType=payload.ProcessDefinition.*activity[?($.@name == (choiceName[0]) as String)][0])(
+                          			if(choiceExp != null)
+                          			('when' @('expression': choiceExp):{
+                          			(componentBuilder(choiceResourceType.resourceType,choiceName))
+                          			})
+                          			else('otherwise':{
+                          			(componentBuilder(choiceResourceType.resourceType,choiceName))
+                          			})
+                          		))
+                          	)) reduce($$ ++ $)
+                          )
                     )
-                    
-                    else if(temp.resourceType == "ae.activities.JDBCUpdateActivity")(
-                          'db:insert' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[name[0]][0].'config-ref'):{
-                                 'db:sql': vars.processComponents[name[0]][0].'sql'
-                          }
-                    )
-                    else if(temp.resourceType == "ae.activities.JMSQueueSendActivity")(
-                          'jms:publish' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[name[0]][0].'config-ref'):{}
-                    )
-                     else if(temp.resourceType == "ae.activities.JSONParserActivity")(
-                          'logger' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO",'message': upper(vars.processComponents[name[0]][0].'message')):{}
-                    )
-                    
-                    else if(temp.resourceType == "ae.activities.JSONRenderActivity")(
-                          'logger' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190", 'level': "INFO",'message': upper(vars.processComponents[name[0]][0].'message')):{}
-                    )
-                    else if(temp.resourceType == "httppalette.httpWebResponse")(
-                          'logger' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO",'message': upper(vars.processComponents[name[0]][0].'message')):{}
-                    )
-                    else if(temp.resourceType == "ae.process.subprocess")(
-                          'flow-ref' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'config-ref': vars.processComponents[name[0]][0].'config-ref'):{}
-                    )
-                    else if(temp.resourceType == "ae.activities.MapperActivity")(
-                     'ee:transform' @('doc:name': vars.processComponents[name[0]][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190"): {
-                     'ee:message' :
-                 'ee:set-payload' : ('%dw 2.0
-output application/java
----
-{
-}') as CData
-            })
                     else (
-                    	'logger' @('doc:name': vars.processComponents[name[0] default ''][0].'doc:name' ,'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO",'message': upper(vars.processComponents[name[0] default ''][0].'message')):{}
-                    )
-            ))) reduce ($$ ++ $)
+                    	using(temp= payload.ProcessDefinition.*activity[?($.@name == payload01)][0],name=payload.ProcessDefinition.*activity[?($.@name == payload01)].@name)(
+                    	componentBuilder(temp.resourceType,name)
+                    ))
+                    )) reduce ($$ ++ $)
        ),
        (
              'logger' @('doc:name':"Logger",'doc:id': "996d170f-3775-4c56-9fa7-14fd34c8a190" ,'level': "INFO", 'message': '#[output application/json ---{
